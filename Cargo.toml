@@ -1,0 +1,29 @@
+[package]
+name = "rasterh3"
+version = "0.1.0"
+authors = ["Nico Mandery <nico@nmandery.net>"]
+description = "Convert raster data to H3 cells"
+edition = "2021"
+license = "MIT"
+keywords = ["geo", "spatial", "h3", "ndarray"]
+
+[dependencies]
+ahash = "0.8"
+geo = "0.23"
+geo-types = "^0.7"
+h3o = { version = "0.1", features = ["geo"] }
+ndarray = { version = "^0.15", features = ["rayon"] }
+rayon = "^1"
+thiserror = "1.0"
+tracing = "0.1"
+
+[dev-dependencies]
+approx = "^0.5"
+criterion = { version = "^0.4", features = ["html_reports"] }
+env_logger = "^0.10"
+gdal = { version = "^0.14", features = ["array"] }
+ordered-float = "3"
+
+[[bench]]
+name = "convert_dataset_r"
+harness = false
