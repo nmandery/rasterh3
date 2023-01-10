@@ -3,8 +3,8 @@ use gdal::{
     Dataset, DriverManager,
 };
 use h3o::geom::ToGeo;
-use h3o_ndarray::ResolutionSearchMode::SmallerThanPixel;
-use h3o_ndarray::{AxisOrder, H3Converter, Transform};
+use rasterh3::ResolutionSearchMode::SmallerThanPixel;
+use rasterh3::{AxisOrder, H3Converter, Transform};
 
 fn main() {
     env_logger::init(); // run with the environment variable RUST_LOG set to "debug" for log output
