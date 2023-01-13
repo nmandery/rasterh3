@@ -1,6 +1,6 @@
 # rasterh3
 
-[![Latest Version](https://img.shields.io/crates/v/h3raster.svg)](https://crates.io/crates/h3raster) [![Documentation](https://docs.rs/h3raster/badge.svg)](https://docs.rs/h3raster)
+[![Latest Version](https://img.shields.io/crates/v/rasterh3.svg)](https://crates.io/crates/rasterh3) [![Documentation](https://docs.rs/rasterh3/badge.svg)](https://docs.rs/rasterh3)
 
 Convert raster data to H3 cells.
 
