@@ -96,7 +96,9 @@ where
         .collect::<Vec<_>>()
 }
 
-/// convert a 2-d ndarray to h3
+/// Converts a two dimensional [`ndarray::ArrayView2`] to H3 cells.
+///
+/// The implementation tries to skip over regions with only nodata values.
 pub struct H3Converter<'a, T>
 where
     T: Sized + PartialEq + Sync + Eq + Hash,
@@ -125,7 +127,7 @@ where
         }
     }
 
-    /// find the h3 resolution closest to the size of a pixel in an array
+    /// Find the H3 resolution closest to the size of a pixel in an array,
     pub fn nearest_h3_resolution(
         &self,
         search_mode: ResolutionSearchMode,
@@ -386,8 +388,7 @@ mod tests {
     #[test]
     fn preserve_nan_values() {
         use ordered_float::OrderedFloat;
-        #[rustfmt::skip]
-            let arr = array![
+        let arr = array![
             [OrderedFloat(f32::NAN), OrderedFloat(1.0_f32)],
             [OrderedFloat(f32::NAN), OrderedFloat(1.0_f32)],
         ];

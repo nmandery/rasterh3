@@ -4,15 +4,15 @@ use h3o::{LatLng, Resolution};
 use crate::{error::Error, sphere::area_squaremeters_rect, transform::Transform, AxisOrder};
 
 pub enum ResolutionSearchMode {
-    /// Chose the h3 resolution where the difference in the area of a pixel and the h3index is
+    /// Chose the H3 resolution where the difference in the area of a pixel and the h3index is
     /// as small as possible.
     MinDiff,
 
-    /// Chose the h3 resolution where the area of the h3index is smaller than the area of a pixel.
+    /// Chose the H3 resolution where the area of the h3index is smaller than the area of a pixel.
     SmallerThanPixel,
 }
 
-/// Find the h3 resolution closed to the size of a pixel in an array
+/// Find the H3 resolution closed to the size of a pixel in an array
 /// of the given shape with the given transform.
 pub fn nearest_h3_resolution(
     shape: &[usize],

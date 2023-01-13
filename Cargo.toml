@@ -6,6 +6,9 @@ description = "Convert raster data to H3 cells"
 edition = "2021"
 license = "MIT"
 keywords = ["geo", "spatial", "h3", "ndarray"]
+readme = "README.md"
+repository = "https://github.com/nmandery/rasterh3.git"
+homepage = "https://github.com/nmandery/rasterh3"
 
 [dependencies]
 ahash = "0.8"

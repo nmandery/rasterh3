@@ -39,7 +39,7 @@ impl Transform {
         Self { a, b, c, d, e, f }
     }
 
-    /// create from an f64 slice in the ordering used by rasterio
+    /// Construct from an f64 array in the ordering used by [rasterio](https://github.com/rasterio/rasterio/).
     pub const fn from_rasterio(transform: &[f64; 6]) -> Self {
         Self::new(
             transform[0],
@@ -51,7 +51,7 @@ impl Transform {
         )
     }
 
-    /// create from an f64 slice in the ordering used by gdal
+    /// Construct from an f64 array in the ordering used by [GDAL](https://gdal.org/).
     pub const fn from_gdal(transform: &[f64; 6]) -> Self {
         Self::new(
             transform[1],
