@@ -71,13 +71,11 @@ impl CellSet {
     }
 
     pub fn iter_uncompacted(&self, r: Resolution) -> Box<dyn Iterator<Item = CellIndex> + '_> {
-        let r2 = r.clone();
         let r_idx: usize = r.into();
         Box::new((0..=r_idx).flat_map(move |r_idx| {
-            let r3 = r2.clone();
             self.cells_by_resolution[r_idx]
                 .iter()
-                .flat_map(move |cell| cell.children(r3))
+                .flat_map(move |cell| cell.children(r))
         }))
     }
 
