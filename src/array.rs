@@ -295,9 +295,9 @@ where
     let window_box = h3o::geom::Rect::from_degrees(window_box)?;
     for cell in window_box.to_cells(h3_resolution) {
         // find the array element for the coordinate of the h3 index
-        let coord = {
+        let coord: Coord = {
             let ll: LatLng = cell.into();
-            Coord::from((ll.lng_degrees(), ll.lat_degrees()))
+            ll.into()
         };
         let arr_coord = {
             let transformed = inverse_transform * coord;
