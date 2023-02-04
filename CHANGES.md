@@ -8,6 +8,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
 ## Unreleased
+* Upgrade h3o to v0.3
 
 ## v0.2.0 (2023-01-16)
 * Upgrade h3o to v0.2
