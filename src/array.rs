@@ -10,7 +10,7 @@ use ndarray::{s, ArrayView2, Axis};
 use rayon::prelude::*;
 use tracing::debug;
 
-use crate::resolution::{nearest_h3_resolution, ResolutionSearchMode};
+use crate::resolution::ResolutionSearchMode;
 use crate::{error::Error, transform::Transform, AxisOrder, CellSet};
 
 fn find_continuous_chunks_along_axis<T>(
@@ -132,12 +132,7 @@ where
         &self,
         search_mode: ResolutionSearchMode,
     ) -> Result<Resolution, Error> {
-        nearest_h3_resolution(
-            self.arr.shape(),
-            self.transform,
-            &self.axis_order,
-            search_mode,
-        )
+        search_mode.nearest_h3_resolution(self.arr.shape(), self.transform, &self.axis_order)
     }
 
     fn rects_with_data_with_nodata(&self, rect_size: usize, nodata: &T) -> Vec<Rect<usize>> {
@@ -295,10 +290,7 @@ where
     let window_box = h3o::geom::Rect::from_degrees(window_box)?;
     for cell in window_box.to_cells(h3_resolution) {
         // find the array element for the coordinate of the h3 index
-        let coord: Coord = {
-            let ll: LatLng = cell.into();
-            ll.into()
-        };
+        let coord: Coord = LatLng::from(cell).into();
         let arr_coord = {
             let transformed = inverse_transform * coord;
 
