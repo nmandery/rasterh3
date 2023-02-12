@@ -21,7 +21,7 @@ fn main() {
     let conv = H3Converter::new(&view, &Some(0_u8), &transform, AxisOrder::YX);
 
     let h3_resolution = conv.nearest_h3_resolution(SmallerThanPixel).unwrap();
-    println!("selected H3 resolution: {}", h3_resolution);
+    println!("selected H3 resolution: {h3_resolution}");
 
     let results = conv.to_h3(h3_resolution, true).unwrap();
     results.iter().for_each(|(value, index_stack)| {
