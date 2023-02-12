@@ -8,6 +8,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
 ## Unreleased
+
+## v0.3.0 (2023-02-12)
 * Upgrade h3o to v0.3
 * Make `nearest_h3_resolution` function a method of `ResolutionSearchMode`.
 
