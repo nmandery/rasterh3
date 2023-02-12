@@ -11,7 +11,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## v0.3.0 (2023-02-12)
 * Upgrade h3o to v0.3
-* Make `nearest_h3_resolution` function a method of `ResolutionSearchMode`.
+* Make `nearest_h3_resolution` function a method of `ResolutionSearchMode`, use a `[usize; 2]` for the shape argument.
 
 ## v0.2.0 (2023-01-16)
 * Upgrade h3o to v0.2

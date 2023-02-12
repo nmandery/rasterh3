@@ -8,9 +8,6 @@ pub enum Error {
     #[error("Empty array")]
     EmptyArray,
 
-    #[error("Unsupported array shape")]
-    UnsupportedArrayShape,
-
     #[error(transparent)]
     InvalidLatLng(#[from] h3o::error::InvalidLatLng),
 

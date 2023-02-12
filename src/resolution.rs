@@ -18,13 +18,10 @@ impl ResolutionSearchMode {
     /// of the given shape with the given transform.
     pub fn nearest_h3_resolution(
         &self,
-        shape: &[usize],
+        shape: [usize; 2],
         transform: &Transform,
         axis_order: &AxisOrder,
     ) -> Result<Resolution, Error> {
-        if shape.len() != 2 {
-            return Err(Error::UnsupportedArrayShape);
-        }
         if shape[0] == 0 || shape[1] == 0 {
             return Err(Error::EmptyArray);
         }
@@ -97,12 +94,12 @@ mod tests {
             49.40792,
         ]);
         let h3_res1 = ResolutionSearchMode::MinDiff
-            .nearest_h3_resolution(&[2000_usize, 2000_usize], &gt, &AxisOrder::YX)
+            .nearest_h3_resolution([2000_usize, 2000_usize], &gt, &AxisOrder::YX)
             .unwrap();
         assert_eq!(h3_res1, Resolution::Ten); // TODO: validate
 
         let h3_res2 = ResolutionSearchMode::SmallerThanPixel
-            .nearest_h3_resolution(&[2000_usize, 2000_usize], &gt, &AxisOrder::YX)
+            .nearest_h3_resolution([2000_usize, 2000_usize], &gt, &AxisOrder::YX)
             .unwrap();
         assert_eq!(h3_res2, Resolution::Eleven); // TODO: validate
     }

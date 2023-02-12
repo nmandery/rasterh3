@@ -132,7 +132,11 @@ where
         &self,
         search_mode: ResolutionSearchMode,
     ) -> Result<Resolution, Error> {
-        search_mode.nearest_h3_resolution(self.arr.shape(), self.transform, &self.axis_order)
+        search_mode.nearest_h3_resolution(
+            [self.arr.dim().0, self.arr.dim().1],
+            self.transform,
+            &self.axis_order,
+        )
     }
 
     fn rects_with_data_with_nodata(&self, rect_size: usize, nodata: &T) -> Vec<Rect<usize>> {
