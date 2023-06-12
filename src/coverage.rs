@@ -8,6 +8,9 @@ use crate::Error;
 ///
 /// After calling `CellCoverage::compact()` the contained cells will not overlap, even when they where added
 /// in different resolutions. Duplicates will be removed.
+///
+/// This struct internally uses mostly `sort` instead of `sort_unstable` as the Vec to be sorted are
+/// often at least partially sorted.
 pub struct CellCoverage {
     pub(crate) modified_resolutions: [bool; 16],
 
@@ -64,7 +67,7 @@ impl CellCoverage {
             while let Some(h3_res) = res {
                 let r_idx: usize = h3_res.into();
                 let mut compacted_in = std::mem::take(&mut self.cells_by_resolution[r_idx]);
-                compacted_in.sort_unstable();
+                compacted_in.sort();
                 compacted_in.dedup();
                 for cell in CellIndex::compact(compacted_in.into_iter())? {
                     self.insert(cell);
@@ -134,7 +137,7 @@ impl CellCoverage {
 
     pub fn dedup(&mut self, shrink: bool, parents: bool) {
         self.cells_by_resolution.par_iter_mut().for_each(|v| {
-            v.sort_unstable();
+            v.sort();
             v.dedup();
             if shrink {
                 v.shrink_to_fit();
