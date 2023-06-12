@@ -9,6 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 * Upgrade geo from 0.23 to 0.24
+* Rename `CellSet` struct to `CellCoverage` and expose more methods of its API.
 
 ## v0.3.0 (2023-02-12)
 * Upgrade h3o to v0.3

@@ -45,7 +45,7 @@ fn main() {
     let defn = Defn::from_layer(&out_lyr);
 
     results.iter().for_each(|(_value, cellset)| {
-        for cell in cellset.iter_compacted() {
+        for cell in cellset.compacted_iter() {
             let mut ft = Feature::new(&defn).unwrap();
             let poly = cell.to_geom(true).unwrap();
             ft.set_geometry(poly.to_gdal().unwrap()).unwrap();

@@ -4,15 +4,19 @@ use rayon::prelude::{IntoParallelRefMutIterator, ParallelIterator};
 
 use crate::Error;
 
-pub struct CellSet {
+/// A container for cells covering an area.
+///
+/// After calling `CellCoverage::compact()` the contained cells will not overlap, even when they where added
+/// in different resolutions. Duplicates will be removed.
+pub struct CellCoverage {
     pub(crate) modified_resolutions: [bool; 16],
 
     /// cells by their resolution. The index of the array is the resolution for the referenced vec
     pub(crate) cells_by_resolution: [Vec<CellIndex>; 16],
 }
 
-impl CellSet {
-    pub(crate) fn append(&mut self, other: &mut Self) {
+impl CellCoverage {
+    pub fn append(&mut self, other: &mut Self) {
         for ((r_idx, sink), source) in self
             .cells_by_resolution
             .iter_mut()
@@ -27,7 +31,25 @@ impl CellSet {
         }
     }
 
-    pub(crate) fn compact(&mut self) -> Result<(), Error> {
+    /// check if the coverage covers the given cell.
+    ///
+    /// This method is far from efficient and should only be used sparingly.
+    pub fn covers(&self, cell: CellIndex) -> bool {
+        let cell_res = cell.resolution();
+        for res in Resolution::range(Resolution::Zero, cell_res) {
+            let search_cell = if res == cell_res {
+                cell
+            } else {
+                cell.parent(res).unwrap()
+            };
+            if self.cells_by_resolution[u8::from(res) as usize].contains(&search_cell) {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn compact(&mut self) -> Result<(), Error> {
         self.dedup(false, false);
 
         if let Some((min_touched_res, _)) = self
@@ -61,7 +83,7 @@ impl CellSet {
         Ok(())
     }
 
-    pub fn iter_compacted(&self) -> Box<dyn Iterator<Item = CellIndex> + '_> {
+    pub fn compacted_iter(&self) -> Box<dyn Iterator<Item = CellIndex> + '_> {
         Box::new(
             self.cells_by_resolution
                 .iter()
@@ -70,11 +92,28 @@ impl CellSet {
         )
     }
 
-    pub fn iter_uncompacted(&self, r: Resolution) -> Box<dyn Iterator<Item = CellIndex> + '_> {
+    pub fn into_compacted_iter(self) -> Box<dyn Iterator<Item = CellIndex>> {
+        Box::new(
+            self.cells_by_resolution
+                .into_iter()
+                .flat_map(|v| v.into_iter()),
+        )
+    }
+
+    pub fn uncompacted_iter(&self, r: Resolution) -> Box<dyn Iterator<Item = CellIndex> + '_> {
         let r_idx: usize = r.into();
         Box::new((0..=r_idx).flat_map(move |r_idx| {
             self.cells_by_resolution[r_idx]
                 .iter()
+                .flat_map(move |cell| cell.children(r))
+        }))
+    }
+
+    pub fn into_uncompacted_iter(mut self, r: Resolution) -> Box<dyn Iterator<Item = CellIndex>> {
+        let r_idx: usize = r.into();
+        Box::new((0..=r_idx).flat_map(move |r_idx| {
+            std::mem::take::<Vec<CellIndex>>(&mut self.cells_by_resolution[r_idx])
+                .into_iter()
                 .flat_map(move |cell| cell.children(r))
         }))
     }
@@ -87,13 +126,13 @@ impl CellSet {
         !self.cells_by_resolution.iter().any(|v| !v.is_empty())
     }
 
-    pub(crate) fn insert(&mut self, cell: CellIndex) {
+    pub fn insert(&mut self, cell: CellIndex) {
         let idx: usize = cell.resolution().into();
         self.cells_by_resolution[idx].push(cell);
         self.modified_resolutions[idx] = true;
     }
 
-    pub(crate) fn dedup(&mut self, shrink: bool, parents: bool) {
+    pub fn dedup(&mut self, shrink: bool, parents: bool) {
         self.cells_by_resolution.par_iter_mut().for_each(|v| {
             v.sort_unstable();
             v.dedup();
@@ -134,7 +173,7 @@ impl CellSet {
         }
     }
 
-    pub(crate) fn finalize(&mut self, compact: bool) -> Result<(), Error> {
+    pub fn finalize(&mut self, compact: bool) -> Result<(), Error> {
         if compact {
             self.compact()?;
         } else {
@@ -145,7 +184,7 @@ impl CellSet {
 }
 
 #[allow(clippy::derivable_impls)]
-impl Default for CellSet {
+impl Default for CellCoverage {
     fn default() -> Self {
         Self {
             modified_resolutions: [false; 16],

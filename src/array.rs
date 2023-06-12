@@ -11,7 +11,7 @@ use rayon::prelude::*;
 use tracing::debug;
 
 use crate::resolution::ResolutionSearchMode;
-use crate::{error::Error, transform::Transform, AxisOrder, CellSet};
+use crate::{error::Error, transform::Transform, AxisOrder, CellCoverage};
 
 fn find_continuous_chunks_along_axis<T>(
     a: &ArrayView2<T>,
@@ -223,7 +223,7 @@ where
         &self,
         h3_resolution: Resolution,
         compact: bool,
-    ) -> Result<HashMap<&'a T, CellSet>, Error> {
+    ) -> Result<HashMap<&'a T, CellCoverage>, Error> {
         let inverse_transform = self.transform.invert()?;
 
         let rect_size = (self.arr.shape()[self.axis_order.x_axis()] / 10).clamp(10, 100);
@@ -268,7 +268,7 @@ where
             for (value, mut cellset) in chunk_h3_map {
                 h3_map
                     .entry(value)
-                    .or_insert_with(CellSet::default)
+                    .or_insert_with(CellCoverage::default)
                     .append(&mut cellset);
             }
         }
@@ -286,11 +286,11 @@ fn convert_array_window<'a, T>(
     nodata_value: &Option<T>,
     h3_resolution: Resolution,
     compact: bool,
-) -> Result<HashMap<&'a T, CellSet>, Error>
+) -> Result<HashMap<&'a T, CellCoverage>, Error>
 where
     T: Sized + PartialEq + Sync + Eq + Hash,
 {
-    let mut chunk_h3_map = HashMap::<&T, CellSet>::default();
+    let mut chunk_h3_map = HashMap::<&T, CellCoverage>::default();
     let window_box = h3o::geom::Rect::from_degrees(window_box)?;
     for cell in window_box.to_cells(h3_resolution) {
         // find the array element for the coordinate of the h3 index
@@ -317,7 +317,7 @@ where
             }
             chunk_h3_map
                 .entry(value)
-                .or_insert_with(CellSet::default)
+                .or_insert_with(CellCoverage::default)
                 .insert(cell);
         }
     }
@@ -328,7 +328,10 @@ where
     Ok(chunk_h3_map)
 }
 
-fn finalize_chunk_map<T>(chunk_map: &mut HashMap<&T, CellSet>, compact: bool) -> Result<(), Error>
+fn finalize_chunk_map<T>(
+    chunk_map: &mut HashMap<&T, CellCoverage>,
+    compact: bool,
+) -> Result<(), Error>
 where
     T: Sync + Eq + Hash,
 {
