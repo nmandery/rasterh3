@@ -8,6 +8,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
 ## Unreleased
+
+## v0.4.0 (2023-07-04)
 * Upgrade geo from 0.23 to 0.24
 * Rename `CellSet` struct to `CellCoverage` and expose more methods of its API.
 
