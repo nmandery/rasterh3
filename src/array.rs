@@ -219,6 +219,10 @@ where
         )
     }
 
+    /// Convert to a hashmap mapping raster values to their `CellCoverage`.
+    ///
+    /// While H3 cells are hexagons and pentagons, this raster conversion process only takes
+    /// the raster value under the centroid of the cell into account.
     pub fn to_h3(
         &self,
         h3_resolution: Resolution,
