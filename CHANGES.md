@@ -8,6 +8,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
 ## Unreleased
+* Upgrade geo from 0.25 to 0.26
 
 ## v0.4.0 (2023-07-04)
 * Upgrade geo from 0.23 to 0.24
