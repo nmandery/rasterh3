@@ -8,6 +8,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
 ## Unreleased
+
+## v0.5.0 (2023-08-31)
 * Upgrade geo from 0.25 to 0.26
 * Upgrade h3o from 0.3 to 0.4
 
