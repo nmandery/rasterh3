@@ -12,7 +12,7 @@ homepage = "https://github.com/nmandery/rasterh3"
 
 [dependencies]
 ahash = "0.8"
-geo = "0.26"
+geo = "0.27"
 geo-types = "^0.7"
 h3o = { version = "0.4", features = ["geo"] }
 ndarray = { version = "^0.15", features = ["rayon"] }
@@ -24,8 +24,8 @@ tracing = "0.1"
 approx = "^0.5"
 criterion = { version = "^0.5", features = ["html_reports"] }
 env_logger = "^0.10"
-gdal = { version = "^0.15", features = ["array"] }
-ordered-float = "3"
+gdal = { version = "^0.16", features = ["array"] }
+ordered-float = "4"
 
 [[bench]]
 name = "convert_dataset_r"
