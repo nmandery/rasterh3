@@ -14,7 +14,7 @@ homepage = "https://github.com/nmandery/rasterh3"
 ahash = "0.8"
 geo = "0.27"
 geo-types = "^0.7"
-h3o = { version = "0.4", features = ["geo"] }
+h3o = { version = "0.5", features = ["geo"] }
 ndarray = { version = "^0.15", features = ["rayon"] }
 rayon = "^1"
 thiserror = "1.0"
