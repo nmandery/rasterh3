@@ -152,6 +152,49 @@ where
         )
     }
 
+    fn chunk_rects_with_data_nodata(
+        &self,
+        rect_size: usize,
+        nodata: &T,
+        axis_x_chunk_i: usize,
+        axis_x_chunk: ArrayView2<T>,
+    ) -> Vec<Rect<usize>> {
+        let mut rects = Vec::new();
+        for chunk_x_rect in find_boxes_containing_data(&axis_x_chunk, nodata, &self.axis_order) {
+            let offset_x = (axis_x_chunk_i * rect_size) + chunk_x_rect.min().x;
+            let chunk_rect_view = {
+                let x_range = chunk_x_rect.min().x..chunk_x_rect.max().x;
+                let y_range = chunk_x_rect.min().y..chunk_x_rect.max().y;
+                match self.axis_order {
+                    AxisOrder::XY => axis_x_chunk.slice(s![x_range, y_range]),
+                    AxisOrder::YX => axis_x_chunk.slice(s![y_range, x_range]),
+                }
+            };
+            rects.extend(
+                chunk_rect_view
+                    .axis_chunks_iter(Axis(self.axis_order.y_axis()), rect_size)
+                    .enumerate()
+                    .map(|(axis_y_chunk_i, axis_y_chunk)| {
+                        let offset_y = (axis_y_chunk_i * rect_size) + chunk_x_rect.min().y;
+
+                        // the window in array coordinates
+                        Rect::new(
+                            Coord {
+                                x: offset_x,
+                                y: offset_y,
+                            },
+                            // add 1 to the max coordinate to include the whole last pixel
+                            Coord {
+                                x: (offset_x + axis_y_chunk.shape()[self.axis_order.x_axis()] + 1),
+                                y: (offset_y + axis_y_chunk.shape()[self.axis_order.y_axis()] + 1),
+                            },
+                        )
+                    }),
+            )
+        }
+        rects
+    }
+
     fn rects_with_data_with_nodata(&self, rect_size: usize, nodata: &T) -> Vec<Rect<usize>> {
         let iter = self
             .arr
@@ -161,49 +204,9 @@ where
         let iter = iter.into_par_iter();
 
         iter.enumerate()
-            .map(|(axis_x_chunk_i, axis_x_chunk)| {
-                let mut rects = Vec::new();
-                for chunk_x_rect in
-                    find_boxes_containing_data(&axis_x_chunk, nodata, &self.axis_order)
-                {
-                    let offset_x = (axis_x_chunk_i * rect_size) + chunk_x_rect.min().x;
-                    let chunk_rect_view = {
-                        let x_range = chunk_x_rect.min().x..chunk_x_rect.max().x;
-                        let y_range = chunk_x_rect.min().y..chunk_x_rect.max().y;
-                        match self.axis_order {
-                            AxisOrder::XY => axis_x_chunk.slice(s![x_range, y_range]),
-                            AxisOrder::YX => axis_x_chunk.slice(s![y_range, x_range]),
-                        }
-                    };
-                    rects.extend(
-                        chunk_rect_view
-                            .axis_chunks_iter(Axis(self.axis_order.y_axis()), rect_size)
-                            .enumerate()
-                            .map(|(axis_y_chunk_i, axis_y_chunk)| {
-                                let offset_y = (axis_y_chunk_i * rect_size) + chunk_x_rect.min().y;
-
-                                // the window in array coordinates
-                                Rect::new(
-                                    Coord {
-                                        x: offset_x,
-                                        y: offset_y,
-                                    },
-                                    // add 1 to the max coordinate to include the whole last pixel
-                                    Coord {
-                                        x: (offset_x
-                                            + axis_y_chunk.shape()[self.axis_order.x_axis()]
-                                            + 1),
-                                        y: (offset_y
-                                            + axis_y_chunk.shape()[self.axis_order.y_axis()]
-                                            + 1),
-                                    },
-                                )
-                            }),
-                    )
-                }
-                rects
+            .flat_map(|(axis_x_chunk_i, axis_x_chunk)| {
+                self.chunk_rects_with_data_nodata(rect_size, nodata, axis_x_chunk_i, axis_x_chunk)
             })
-            .flatten()
             .collect()
     }
 
