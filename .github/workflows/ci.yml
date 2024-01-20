@@ -36,5 +36,8 @@ jobs:
       - name: Lint with clippy
         run: cargo clippy --all-targets --all-features
 
-      - name: Test with cargo
+      - name: Test with cargo  - default features
+        run: cargo test --workspace --all-targets
+
+      - name: Test with cargo - all features
         run: cargo test --workspace --all-features --all-targets
