@@ -1,5 +1,7 @@
 use ahash::HashSet;
 use h3o::{CellIndex, Resolution};
+
+#[cfg(feature = "rayon")]
 use rayon::prelude::{IntoParallelRefMutIterator, ParallelIterator};
 
 use crate::Error;
@@ -136,7 +138,13 @@ impl CellCoverage {
     }
 
     pub fn dedup(&mut self, shrink: bool, parents: bool) {
-        self.cells_by_resolution.par_iter_mut().for_each(|v| {
+        #[cfg(feature = "rayon")]
+        let iter = self.cells_by_resolution.par_iter_mut();
+
+        #[cfg(not(feature = "rayon"))]
+        let iter = self.cells_by_resolution.iter_mut();
+
+        iter.for_each(|v| {
             v.sort();
             v.dedup();
             if shrink {

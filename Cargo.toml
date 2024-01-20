@@ -10,13 +10,16 @@ readme = "README.md"
 repository = "https://github.com/nmandery/rasterh3.git"
 homepage = "https://github.com/nmandery/rasterh3"
 
+[features]
+rayon = ["dep:rayon", "ndarray/rayon"]
+
 [dependencies]
 ahash = "0.8"
 geo = "0.27"
 geo-types = "^0.7"
 h3o = { version = "0.5", features = ["geo"] }
-ndarray = { version = "^0.15", features = ["rayon"] }
-rayon = "^1"
+ndarray = { version = "^0.15", features = [] }
+rayon = { version = "^1" , optional = true}
 thiserror = "1.0"
 tracing = "0.1"
 

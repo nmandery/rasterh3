@@ -7,11 +7,24 @@ use geo_types::{Coord, Rect};
 use h3o::geom::{ContainmentMode, PolyfillConfig, ToCells};
 use h3o::{LatLng, Resolution};
 use ndarray::{s, ArrayView2, Axis};
+
+#[cfg(feature = "rayon")]
 use rayon::prelude::*;
+
 use tracing::debug;
 
 use crate::resolution::ResolutionSearchMode;
 use crate::{error::Error, transform::Transform, AxisOrder, CellCoverage};
+
+#[cfg(feature = "rayon")]
+pub trait ArrayValue: Sized + PartialEq + Eq + Hash + Sync {}
+#[cfg(feature = "rayon")]
+impl<T> ArrayValue for T where T: Sized + PartialEq + Eq + Hash + Sync {}
+
+#[cfg(not(feature = "rayon"))]
+pub trait ArrayValue: Sized + PartialEq + Eq + Hash {}
+#[cfg(not(feature = "rayon"))]
+impl<T> ArrayValue for T where T: Sized + PartialEq + Eq + Hash {}
 
 fn find_continuous_chunks_along_axis<T>(
     a: &ArrayView2<T>,
@@ -19,7 +32,7 @@ fn find_continuous_chunks_along_axis<T>(
     nodata_value: &T,
 ) -> Vec<(usize, usize)>
 where
-    T: Sized + PartialEq,
+    T: ArrayValue,
 {
     let mut chunks = Vec::new();
     let mut current_chunk_start: Option<usize> = None;
@@ -52,7 +65,7 @@ fn find_boxes_containing_data<T>(
     axis_order: &AxisOrder,
 ) -> Vec<Rect<usize>>
 where
-    T: Sized + PartialEq,
+    T: ArrayValue,
 {
     find_continuous_chunks_along_axis(a, axis_order.x_axis(), nodata_value)
         .into_iter()
@@ -101,7 +114,7 @@ where
 /// The implementation tries to skip over regions with only nodata values.
 pub struct H3Converter<'a, T>
 where
-    T: Sized + PartialEq + Sync + Eq + Hash,
+    T: ArrayValue,
 {
     arr: &'a ArrayView2<'a, T>,
     nodata_value: &'a Option<T>,
@@ -111,7 +124,7 @@ where
 
 impl<'a, T> H3Converter<'a, T>
 where
-    T: Sized + PartialEq + Sync + Eq + Hash,
+    T: ArrayValue,
 {
     pub fn new(
         arr: &'a ArrayView2<'a, T>,
@@ -140,10 +153,14 @@ where
     }
 
     fn rects_with_data_with_nodata(&self, rect_size: usize, nodata: &T) -> Vec<Rect<usize>> {
-        self.arr
-            .axis_chunks_iter(Axis(self.axis_order.x_axis()), rect_size)
-            .into_par_iter() // requires T to be Sync
-            .enumerate()
+        let iter = self
+            .arr
+            .axis_chunks_iter(Axis(self.axis_order.x_axis()), rect_size);
+
+        #[cfg(feature = "rayon")]
+        let iter = iter.into_par_iter();
+
+        iter.enumerate()
             .map(|(axis_x_chunk_i, axis_x_chunk)| {
                 let mut rects = Vec::new();
                 for chunk_x_rect in
@@ -238,8 +255,13 @@ where
             n_rects
         );
 
-        let chunk_h3_maps = rects
-            .into_par_iter()
+        #[cfg(feature = "rayon")]
+        let rects_iter = rects.into_par_iter();
+
+        #[cfg(not(feature = "rayon"))]
+        let rects_iter = rects.into_iter();
+
+        let chunk_h3_maps = rects_iter
             .enumerate()
             .map(|(array_window_i, array_window)| {
                 debug!(
@@ -292,7 +314,7 @@ fn convert_array_window<'a, T>(
     compact: bool,
 ) -> Result<HashMap<&'a T, CellCoverage>, Error>
 where
-    T: Sized + PartialEq + Sync + Eq + Hash,
+    T: ArrayValue,
 {
     let mut chunk_h3_map = HashMap::<&T, CellCoverage>::default();
     let window_box = h3o::geom::Rect::from_degrees(window_box)?;
@@ -339,12 +361,15 @@ fn finalize_chunk_map<T>(
     compact: bool,
 ) -> Result<(), Error>
 where
-    T: Sync + Eq + Hash,
+    T: ArrayValue,
 {
-    chunk_map
-        .par_iter_mut()
-        .into_par_iter()
-        .try_for_each(|(_, cellset)| cellset.finalize(compact))
+    #[cfg(feature = "rayon")]
+    let iter = chunk_map.par_iter_mut();
+
+    #[cfg(not(feature = "rayon"))]
+    let mut iter = chunk_map.iter_mut();
+
+    iter.try_for_each(|(_, cellset)| cellset.finalize(compact))
 }
 
 #[cfg(test)]

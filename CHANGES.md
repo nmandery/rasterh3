@@ -8,7 +8,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
 ## Unreleased
-Upgrade h3o from 0.4 to 0.5
+* Upgrade h3o from 0.4 to 0.5
+* Feature-gate rayon support. To use multithreading the `rayon` feature now needs to be explicitly enabled.
 
 ## v0.5.1 (2023-12-16)
 * Upgrade geo from 0.26 to 0.27
