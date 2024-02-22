@@ -3,7 +3,7 @@ use std::hash::Hash;
 
 use ahash::HashMap;
 use geo::MapCoords;
-use geo_types::{Coord, Rect};
+use geo_types::{coord, Coord, Rect};
 use h3o::geom::{ContainmentMode, PolyfillConfig, ToCells};
 use h3o::{LatLng, Resolution};
 use ndarray::{s, ArrayView2, Axis};
@@ -14,6 +14,7 @@ use rayon::prelude::*;
 use tracing::debug;
 
 use crate::resolution::ResolutionSearchMode;
+use crate::util::split_rect_at_antimeridian;
 use crate::{error::Error, transform::Transform, AxisOrder, CellCoverage};
 
 #[cfg(feature = "rayon")]
@@ -320,36 +321,50 @@ where
     T: ArrayValue,
 {
     let mut chunk_h3_map = HashMap::<&T, CellCoverage>::default();
-    let window_box = h3o::geom::Rect::from_degrees(window_box)?;
-    for cell in window_box.to_cells(
-        PolyfillConfig::new(h3_resolution).containment_mode(ContainmentMode::ContainsCentroid),
-    ) {
-        // find the array element for the coordinate of the h3 index
-        let coord: Coord = LatLng::from(cell).into();
-        let arr_coord = {
-            let transformed = inverse_transform * coord;
 
-            match axis_order {
-                AxisOrder::XY => [
-                    transformed.x.floor() as usize,
-                    transformed.y.floor() as usize,
-                ],
-                AxisOrder::YX => [
-                    transformed.y.floor() as usize,
-                    transformed.x.floor() as usize,
-                ],
-            }
-        };
-        if let Some(value) = arr.get(arr_coord) {
-            if let Some(nodata) = nodata_value {
-                if nodata == value {
-                    continue;
+    for splitted_window_box in split_rect_at_antimeridian(window_box) {
+        // h3 is only defined within -180 ... 180, so all boxes after the antimeridian split should be
+        // in this range.
+        debug_assert!(
+            splitted_window_box.rect.min().x >= -180.0 && splitted_window_box.rect.min().x <= 180.0
+        );
+        debug_assert!(
+            splitted_window_box.rect.max().x >= -180.0 && splitted_window_box.rect.max().x <= 180.0
+        );
+
+        let window_box = h3o::geom::Rect::from_degrees(splitted_window_box.rect)?;
+        for cell in window_box.to_cells(
+            PolyfillConfig::new(h3_resolution).containment_mode(ContainmentMode::ContainsCentroid),
+        ) {
+            // find the array element for the coordinate of the h3 index
+            let cell_centroid: Coord = LatLng::from(cell).into();
+            let arr_coord = {
+                // apply to x offset caused by the antimeridian split and transform to array coordinates
+                let transformed = inverse_transform
+                    * coord! {x: cell_centroid.x + splitted_window_box.difference_due_to_antimeridian_split, y:cell_centroid.y};
+
+                match axis_order {
+                    AxisOrder::XY => [
+                        transformed.x.floor() as usize,
+                        transformed.y.floor() as usize,
+                    ],
+                    AxisOrder::YX => [
+                        transformed.y.floor() as usize,
+                        transformed.x.floor() as usize,
+                    ],
                 }
+            };
+            if let Some(value) = arr.get(arr_coord) {
+                if let Some(nodata) = nodata_value {
+                    if nodata == value {
+                        continue;
+                    }
+                }
+                chunk_h3_map
+                    .entry(value)
+                    .or_insert_with(CellCoverage::default)
+                    .insert(cell);
             }
-            chunk_h3_map
-                .entry(value)
-                .or_insert_with(CellCoverage::default)
-                .insert(cell);
         }
     }
 

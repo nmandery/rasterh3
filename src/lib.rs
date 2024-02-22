@@ -15,3 +15,4 @@ mod error;
 mod resolution;
 mod sphere;
 mod transform;
+mod util;
