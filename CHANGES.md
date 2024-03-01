@@ -8,6 +8,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
 ## Unreleased
+
+## v0.7.0 (2024-03-01)
 * Fix converting datasets spanning the antimeridian by splitting and normalizing tiles before generating cells from them.
 r Upgrade h3o from 0.5 to 0.6
 * Upgrade geo from 0.26 to 0.27
