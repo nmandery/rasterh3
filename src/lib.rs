@@ -6,13 +6,11 @@ pub use crate::coverage::CellCoverage;
 pub use crate::error::Error;
 pub use crate::resolution::ResolutionSearchMode;
 
-pub use crate::transform::Transform;
-
 mod array;
 mod axis;
 mod coverage;
 mod error;
 mod resolution;
 mod sphere;
-mod transform;
+pub mod transform;
 mod util;
