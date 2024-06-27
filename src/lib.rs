@@ -11,6 +11,6 @@ mod axis;
 mod coverage;
 mod error;
 mod resolution;
-mod sphere;
+pub mod sphere;
 pub mod transform;
 mod util;

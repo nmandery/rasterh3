@@ -1,19 +1,16 @@
 use geo::AffineTransform;
 
 /// Construct from a f64 array in the ordering used by [GDAL](https://gdal.org/).
-pub fn from_gdal(t: &[f64; 6]) -> AffineTransform<f64> {
-    AffineTransform::new(t[1], t[2], t[0], t[4], t[5], t[3])
+pub fn from_gdal(params: &[f64; 6]) -> AffineTransform<f64> {
+    AffineTransform::new(
+        params[1], params[2], params[0], params[4], params[5], params[3],
+    )
 }
 
 /// Construct from a f64 array in the ordering used by [rasterio](https://github.com/rasterio/rasterio/).
-pub fn from_rasterio(transform: &[f64; 6]) -> AffineTransform<f64> {
+pub fn from_rasterio(params: &[f64; 6]) -> AffineTransform<f64> {
     AffineTransform::new(
-        transform[0],
-        transform[1],
-        transform[2],
-        transform[3],
-        transform[4],
-        transform[5],
+        params[0], params[1], params[2], params[3], params[4], params[5],
     )
 }
 

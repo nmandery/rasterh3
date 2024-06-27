@@ -2,7 +2,7 @@ use geo::{AffineOps, AffineTransform};
 use geo_types::Rect;
 use h3o::{LatLng, Resolution};
 
-use crate::{error::Error, sphere::area_squaremeters_rect, AxisOrder};
+use crate::{error::Error, sphere::AreaOnSphere, AxisOrder};
 
 #[derive(Copy, Clone)]
 pub enum ResolutionSearchMode {
@@ -34,7 +34,7 @@ impl ResolutionSearchMode {
             ),
         )
         .affine_transform(transform);
-        let area_pixel = area_squaremeters_rect(&bbox_array)
+        let area_pixel = bbox_array.area_on_sphere_m2()
             / (shape[axis_order.x_axis()] * shape[axis_order.y_axis()]) as f64;
         let center_of_array: LatLng = bbox_array.center().try_into()?;
 
