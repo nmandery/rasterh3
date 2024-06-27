@@ -48,7 +48,7 @@ mod tests {
     #[test]
     fn test_split_rect_at_antimeridian_not_crossing() {
         let rect = Rect::new(coord! {x: 45.0, y:12.0}, coord! {x:67.0, y: 23.0});
-        let splitted = split_rect_at_antimeridian(rect.clone());
+        let splitted = split_rect_at_antimeridian(rect);
         assert_eq!(splitted.len(), 1);
         assert_eq!(splitted[0].rect, rect);
         assert_eq!(splitted[0].difference_due_to_antimeridian_split, 0.0);
@@ -57,7 +57,7 @@ mod tests {
     #[test]
     fn test_split_rect_at_antimeridian_lower() {
         let rect = Rect::new(coord! {x: -185.0, y:12.0}, coord! {x:-178.0, y: 23.0});
-        let splitted = split_rect_at_antimeridian(rect.clone());
+        let splitted = split_rect_at_antimeridian(rect);
         assert_eq!(splitted.len(), 2);
         assert_eq!(
             splitted[0].rect,
@@ -74,7 +74,7 @@ mod tests {
     #[test]
     fn test_split_rect_at_antimeridian_upper() {
         let rect = Rect::new(coord! {x: 185.0, y:12.0}, coord! {x:178.0, y: 23.0});
-        let splitted = split_rect_at_antimeridian(rect.clone());
+        let splitted = split_rect_at_antimeridian(rect);
         assert_eq!(splitted.len(), 2);
         assert_eq!(
             splitted[0].rect,
