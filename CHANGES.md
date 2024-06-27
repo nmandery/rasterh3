@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## v0.8.0 (2024-06-27)
+
 * Create and expose `AreaOnSphere` trait.
 * Replace own affine transformation implementation with `geo::AffineTransform<f64>`.
 

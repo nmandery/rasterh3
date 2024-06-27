@@ -1,6 +1,6 @@
 [package]
 name = "rasterh3"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["Nico Mandery <nico@nmandery.net>"]
 description = "Convert raster data to H3 cells"
 edition = "2021"
@@ -19,7 +19,7 @@ geo = "0.28"
 geo-types = "^0.7"
 h3o = { version = "0.6", features = ["geo"] }
 ndarray = { version = "^0.15", features = [] }
-rayon = { version = "^1" , optional = true}
+rayon = { version = "^1", optional = true }
 thiserror = "1.0"
 tracing = "0.1"
 
