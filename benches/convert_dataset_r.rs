@@ -1,13 +1,14 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use gdal::Dataset;
+use geo::AffineTransform;
 use h3o::Resolution;
 use ndarray::{Array2, ArrayView, Ix2};
-use rasterh3::{AxisOrder, H3Converter, Transform};
+use rasterh3::{AxisOrder, H3Converter};
 
-fn load_r_dataset() -> (Array2<u8>, Transform) {
+fn load_r_dataset() -> (Array2<u8>, AffineTransform<f64>) {
     let filename = format!("{}/data/r.tiff", env!("CARGO_MANIFEST_DIR"));
     let dataset = Dataset::open(filename).unwrap();
-    let transform = Transform::from_gdal(&dataset.geo_transform().unwrap());
+    let transform = rasterh3::transform::from_gdal(&dataset.geo_transform().unwrap());
     let band = dataset.rasterband(1).unwrap();
     let band_array = band
         .read_as_array::<u8>((0, 0), band.size(), band.size(), None)
@@ -17,7 +18,7 @@ fn load_r_dataset() -> (Array2<u8>, Transform) {
 
 fn convert_r_dataset<'a>(
     view: &'a ArrayView<'a, u8, Ix2>,
-    transform: &'a Transform,
+    transform: &'a AffineTransform<f64>,
     h3_resolution: Resolution,
 ) {
     let conv = H3Converter::new(view, &Some(0_u8), transform, AxisOrder::XY);

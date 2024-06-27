@@ -1,7 +1,8 @@
-use geo_types::{Coord, Rect};
+use geo::{AffineOps, AffineTransform};
+use geo_types::Rect;
 use h3o::{LatLng, Resolution};
 
-use crate::{error::Error, sphere::area_squaremeters_rect, transform::Transform, AxisOrder};
+use crate::{error::Error, sphere::area_squaremeters_rect, AxisOrder};
 
 #[derive(Copy, Clone)]
 pub enum ResolutionSearchMode {
@@ -19,20 +20,20 @@ impl ResolutionSearchMode {
     pub fn nearest_h3_resolution(
         &self,
         shape: [usize; 2],
-        transform: &Transform,
+        transform: &AffineTransform<f64>,
         axis_order: &AxisOrder,
     ) -> Result<Resolution, Error> {
         if shape[0] == 0 || shape[1] == 0 {
             return Err(Error::EmptyArray);
         }
         let bbox_array = Rect::new(
-            transform * Coord::from((0.0_f64, 0.0_f64)),
-            transform
-                * Coord::from((
-                    (shape[axis_order.x_axis()] - 1) as f64,
-                    (shape[axis_order.y_axis()] - 1) as f64,
-                )),
-        );
+            (0.0_f64, 0.0_f64),
+            (
+                (shape[axis_order.x_axis()] - 1) as f64,
+                (shape[axis_order.y_axis()] - 1) as f64,
+            ),
+        )
+        .affine_transform(transform);
         let area_pixel = area_squaremeters_rect(&bbox_array)
             / (shape[axis_order.x_axis()] * shape[axis_order.y_axis()]) as f64;
         let center_of_array: LatLng = bbox_array.center().try_into()?;
@@ -79,13 +80,12 @@ mod tests {
     use h3o::Resolution;
 
     use crate::resolution::ResolutionSearchMode;
-    use crate::transform::Transform;
     use crate::AxisOrder;
 
     #[test]
     fn test_nearest_h3_resolution() {
         // transform of the included r.tiff
-        let gt = Transform::from_rasterio(&[
+        let gt = crate::transform::from_rasterio(&[
             0.0011965049999999992,
             0.0,
             8.11377,

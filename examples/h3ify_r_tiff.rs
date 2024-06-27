@@ -3,15 +3,16 @@ use gdal::{
     Dataset, DriverManager,
 };
 use h3o::geom::ToGeo;
+use rasterh3::transform::from_gdal;
 use rasterh3::ResolutionSearchMode::SmallerThanPixel;
-use rasterh3::{AxisOrder, H3Converter, Transform};
+use rasterh3::{AxisOrder, H3Converter};
 
 fn main() {
     env_logger::init(); // run with the environment variable RUST_LOG set to "debug" for log output
 
     let filename = format!("{}/data/r.tiff", env!("CARGO_MANIFEST_DIR"));
     let dataset = Dataset::open(filename).unwrap();
-    let transform = Transform::from_gdal(&dataset.geo_transform().unwrap());
+    let transform = from_gdal(&dataset.geo_transform().unwrap());
     let band = dataset.rasterband(1).unwrap();
     let band_array = band
         .read_as_array::<u8>((0, 0), band.size(), band.size(), None)

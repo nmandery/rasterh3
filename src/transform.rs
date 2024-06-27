@@ -1,135 +1,20 @@
-use std::ops::Mul;
+use geo::AffineTransform;
 
-use geo_types::{Coord, Rect};
-
-use crate::error::Error;
-
-/// Affine Geotransform
-///
-/// Ported from [affine library](https://github.com/sgillies/affine/blob/master/affine/__init__.py) (used by rasterio).
-///
-/// `a`, `b`, `c`, `d`, `e` and `f` are typed as `f64` and are coefficients of an augmented affine
-/// transformation matrix:
-///
-/// ```text
-///   | x' |   | a  b  c | | x |
-///   | y' | = | d  e  f | | y |
-///   | 1  |   | 0  0  1 | | 1 |
-/// ```
-///
-/// `a`, `b`, and `c` are the elements of the first row of the matrix. `d`, `e`, and `f` are the elements of the second row.
-///
-/// Other sources:
-/// * [GDAL geotransform](https://gdal.org/tutorials/geotransforms_tut.html)
-/// * [rasterio 1.0+ vs. GDAL](https://rasterio.readthedocs.io/en/latest/topics/migrating-to-v1.html#affine-affine-vs-gdal-style-geotransforms)
-///
-#[derive(Clone, PartialEq, Debug)]
-pub struct Transform {
-    a: f64,
-    b: f64,
-    c: f64,
-    d: f64,
-    e: f64,
-    f: f64,
+/// Construct from a f64 array in the ordering used by [GDAL](https://gdal.org/).
+pub fn from_gdal(t: &[f64; 6]) -> AffineTransform<f64> {
+    AffineTransform::new(t[1], t[2], t[0], t[4], t[5], t[3])
 }
 
-impl Transform {
-    #![allow(clippy::many_single_char_names)]
-    pub const fn new(a: f64, b: f64, c: f64, d: f64, e: f64, f: f64) -> Self {
-        Self { a, b, c, d, e, f }
-    }
-
-    /// Construct from an f64 array in the ordering used by [rasterio](https://github.com/rasterio/rasterio/).
-    pub const fn from_rasterio(transform: &[f64; 6]) -> Self {
-        Self::new(
-            transform[0],
-            transform[1],
-            transform[2],
-            transform[3],
-            transform[4],
-            transform[5],
-        )
-    }
-
-    /// Construct from an f64 array in the ordering used by [GDAL](https://gdal.org/).
-    pub const fn from_gdal(transform: &[f64; 6]) -> Self {
-        Self::new(
-            transform[1],
-            transform[2],
-            transform[0],
-            transform[4],
-            transform[5],
-            transform[3],
-        )
-    }
-
-    /// The determinant of the transform matrix
-    pub fn determinant(&self) -> f64 {
-        self.a * self.e - self.b * self.d
-    }
-
-    /// True if this transform is degenerate.
-    ///
-    /// Which means that it will collapse a shape to an effective area
-    /// of zero. Degenerate transforms cannot be inverted.
-    pub fn is_degenerate(&self) -> bool {
-        self.determinant() == 0.0
-    }
-
-    pub fn invert(&self) -> Result<Self, Error> {
-        if self.is_degenerate() {
-            return Err(Error::TransformNotInvertible);
-        }
-
-        let idet = 1.0 / self.determinant();
-        let ra = self.e * idet;
-        let rb = -self.b * idet;
-        let rd = -self.d * idet;
-        let re = self.a * idet;
-        Ok(Self::new(
-            ra,
-            rb,
-            -self.c * ra - self.f * rb,
-            rd,
-            re,
-            -self.c * rd - self.f * re,
-        ))
-    }
-
-    /// Apply the transformation to a coordinate
-    pub fn transform_coordinate(&self, coordinate: &Coord<f64>) -> Coord<f64> {
-        Coord {
-            x: coordinate.x.mul_add(self.a, coordinate.y * self.b) + self.c,
-            y: coordinate.x.mul_add(self.d, coordinate.y * self.e) + self.f,
-        }
-    }
-}
-
-/// apply the transformation to a coordinate
-impl Mul<&Coord<f64>> for &Transform {
-    type Output = Coord<f64>;
-
-    fn mul(self, rhs: &Coord<f64>) -> Self::Output {
-        self.transform_coordinate(rhs)
-    }
-}
-
-/// apply the transformation to a coordinate
-impl Mul<Coord<f64>> for &Transform {
-    type Output = Coord<f64>;
-
-    fn mul(self, rhs: Coord<f64>) -> Self::Output {
-        self.transform_coordinate(&rhs)
-    }
-}
-
-/// apply the transformation to a rect
-impl Mul<&Rect<f64>> for &Transform {
-    type Output = Rect<f64>;
-
-    fn mul(self, rhs: &Rect<f64>) -> Self::Output {
-        Rect::new(self * rhs.min(), self * rhs.max())
-    }
+/// Construct from a f64 array in the ordering used by [rasterio](https://github.com/rasterio/rasterio/).
+pub fn from_rasterio(transform: &[f64; 6]) -> AffineTransform<f64> {
+    AffineTransform::new(
+        transform[0],
+        transform[1],
+        transform[2],
+        transform[3],
+        transform[4],
+        transform[5],
+    )
 }
 
 #[cfg(test)]
@@ -173,22 +58,23 @@ mod tests {
      */
 
     use approx::assert_relative_eq;
-    use geo_types::Coord;
+    use geo::{AffineOps, AffineTransform};
+    use geo_types::point;
 
-    use crate::transform::Transform;
+    use crate::transform::{from_gdal, from_rasterio};
 
-    fn r_tiff_test_helper(gt: &Transform) {
+    fn r_tiff_test_helper(gt: &AffineTransform<f64>) {
         // upper left pixel
-        let px_ul = Coord { x: 0., y: 0. };
+        let px_ul = point! { x: 0., y: 0. };
 
-        let coord_ul = gt * px_ul;
-        assert_relative_eq!(coord_ul.x, 8.11377);
-        assert_relative_eq!(coord_ul.y, 49.40792);
+        let coord_ul = px_ul.affine_transform(gt);
+        assert_relative_eq!(coord_ul.x(), 8.11377);
+        assert_relative_eq!(coord_ul.y(), 49.40792);
 
-        let gt_inv = gt.invert().unwrap();
-        let px_ul_back = &gt_inv * coord_ul;
-        assert_relative_eq!(px_ul_back.x, 0.0);
-        assert_relative_eq!(px_ul_back.y, 0.0);
+        let gt_inv = gt.inverse().unwrap();
+        let px_ul_back = coord_ul.affine_transform(&gt_inv);
+        assert_relative_eq!(px_ul_back.x(), 0.0);
+        assert_relative_eq!(px_ul_back.y(), 0.0);
     }
 
     #[test]
@@ -201,7 +87,7 @@ mod tests {
         >>> ds.GetGeoTransform()
         (8.11377, 0.0011965049999999992, 0.0, 49.40792, 0.0, -0.001215135)
          */
-        let gt = Transform::from_gdal(&[
+        let gt = from_gdal(&[
             8.11377,
             0.0011965049999999992,
             0.0,
@@ -223,7 +109,7 @@ mod tests {
         Affine(0.0011965049999999992, 0.0, 8.11377,
                0.0, -0.001215135, 49.40792)
          */
-        let gt = Transform::from_rasterio(&[
+        let gt = from_rasterio(&[
             0.0011965049999999992,
             0.0,
             8.11377,

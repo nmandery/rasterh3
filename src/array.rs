@@ -2,8 +2,8 @@ use std::cmp::min;
 use std::hash::Hash;
 
 use ahash::HashMap;
-use geo::MapCoords;
-use geo_types::{coord, Coord, Rect};
+use geo::{AffineOps, AffineTransform, MapCoords};
+use geo_types::{point, Coord, Rect};
 use h3o::geom::{ContainmentMode, PolyfillConfig, ToCells};
 use h3o::{LatLng, Resolution};
 use ndarray::{s, ArrayView2, Axis};
@@ -15,7 +15,7 @@ use tracing::debug;
 
 use crate::resolution::ResolutionSearchMode;
 use crate::util::split_rect_at_antimeridian;
-use crate::{error::Error, transform::Transform, AxisOrder, CellCoverage};
+use crate::{error::Error, AxisOrder, CellCoverage};
 
 #[cfg(feature = "rayon")]
 pub trait ArrayValue: Sized + PartialEq + Eq + Hash + Sync {}
@@ -110,7 +110,7 @@ where
         .collect::<Vec<_>>()
 }
 
-/// Converts a two dimensional [`ndarray::ArrayView2`] to H3 cells.
+/// Converts a two-dimensional [`ndarray::ArrayView2`] to H3 cells.
 ///
 /// The implementation tries to skip over regions with only nodata values.
 pub struct H3Converter<'a, T>
@@ -119,7 +119,7 @@ where
 {
     arr: &'a ArrayView2<'a, T>,
     nodata_value: &'a Option<T>,
-    transform: &'a Transform,
+    transform: &'a AffineTransform<f64>,
     axis_order: AxisOrder,
 }
 
@@ -130,7 +130,7 @@ where
     pub fn new(
         arr: &'a ArrayView2<'a, T>,
         nodata_value: &'a Option<T>,
-        transform: &'a Transform,
+        transform: &'a AffineTransform<f64>,
         axis_order: AxisOrder,
     ) -> Self {
         Self {
@@ -249,7 +249,10 @@ where
         h3_resolution: Resolution,
         compact: bool,
     ) -> Result<HashMap<&'a T, CellCoverage>, Error> {
-        let inverse_transform = self.transform.invert()?;
+        let inverse_transform = self
+            .transform
+            .inverse()
+            .ok_or(Error::TransformNotInvertible)?;
 
         let rect_size = (self.arr.shape()[self.axis_order.x_axis()] / 10).clamp(10, 100);
         let rects = self.rects_with_data(rect_size);
@@ -278,7 +281,7 @@ where
 
                 let window = array_window.map_coords(|c| Coord::from((c.x as f64, c.y as f64)));
                 // the window in geographical coordinates
-                let window_box = self.transform * &window;
+                let window_box = window.affine_transform(self.transform);
 
                 convert_array_window(
                     self.arr,
@@ -311,7 +314,7 @@ where
 fn convert_array_window<'a, T>(
     arr: &'a ArrayView2<'a, T>,
     window_box: Rect<f64>,
-    inverse_transform: &Transform,
+    inverse_transform: &AffineTransform<f64>,
     axis_order: AxisOrder,
     nodata_value: &Option<T>,
     h3_resolution: Resolution,
@@ -340,17 +343,17 @@ where
             let cell_centroid: Coord = LatLng::from(cell).into();
             let arr_coord = {
                 // apply to x offset caused by the antimeridian split and transform to array coordinates
-                let transformed = inverse_transform
-                    * coord! {x: cell_centroid.x + splitted_window_box.difference_due_to_antimeridian_split, y:cell_centroid.y};
+                let transformed = point! {x: cell_centroid.x + splitted_window_box.difference_due_to_antimeridian_split, y:cell_centroid.y}
+                    .affine_transform(inverse_transform);
 
                 match axis_order {
                     AxisOrder::XY => [
-                        transformed.x.floor() as usize,
-                        transformed.y.floor() as usize,
+                        transformed.x().floor() as usize,
+                        transformed.y().floor() as usize,
                     ],
                     AxisOrder::YX => [
-                        transformed.y.floor() as usize,
-                        transformed.x.floor() as usize,
+                        transformed.y().floor() as usize,
+                        transformed.x().floor() as usize,
                     ],
                 }
             };
@@ -395,7 +398,7 @@ mod tests {
     use ndarray::array;
 
     use crate::array::find_boxes_containing_data;
-    use crate::{AxisOrder, H3Converter, ResolutionSearchMode, Transform};
+    use crate::{AxisOrder, H3Converter, ResolutionSearchMode};
 
     #[test]
     fn test_find_boxes_containing_data() {
@@ -426,7 +429,7 @@ mod tests {
             }
         }
 
-        // there should be far less indexes to visit now
+        // there should be far fewer indexes to visit now
         assert!(n_elements_in_boxes < (n_elements / 2));
 
         // all elements should have been removed
@@ -440,7 +443,7 @@ mod tests {
             [OrderedFloat(f32::NAN), OrderedFloat(1.0_f32)],
             [OrderedFloat(f32::NAN), OrderedFloat(1.0_f32)],
         ];
-        let transform = Transform::from_gdal(&[11.0, 1.0, 0.0, 10.0, 1.2, 0.2]);
+        let transform = crate::transform::from_gdal(&[11.0, 1.0, 0.0, 10.0, 1.2, 0.2]);
 
         let view = arr.view();
         let converter = H3Converter::new(&view, &None, &transform, AxisOrder::XY);
