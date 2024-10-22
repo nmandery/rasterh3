@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## v0.9.0 (2024-10-22)
+
+* Bump ndarray to 0.16
+
 ## v0.8.0 (2024-06-27)
 
 * Create and expose `AreaOnSphere` trait.

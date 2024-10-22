@@ -1,6 +1,6 @@
 [package]
 name = "rasterh3"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["Nico Mandery <nico@nmandery.net>"]
 description = "Convert raster data to H3 cells"
 edition = "2021"
