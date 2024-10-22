@@ -10,9 +10,10 @@ fn load_r_dataset() -> (Array2<u8>, AffineTransform<f64>) {
     let dataset = Dataset::open(filename).unwrap();
     let transform = rasterh3::transform::from_gdal(&dataset.geo_transform().unwrap());
     let band = dataset.rasterband(1).unwrap();
-    let band_array = band
-        .read_as_array::<u8>((0, 0), band.size(), band.size(), None)
+    let band_buffer = band
+        .read_as::<u8>((0, 0), band.size(), band.size(), None)
         .unwrap();
+    let band_array = band_buffer.to_array().unwrap();
     (band_array, transform)
 }
 
