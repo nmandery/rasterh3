@@ -4,7 +4,7 @@ use std::hash::Hash;
 use ahash::HashMap;
 use geo::{AffineOps, AffineTransform, MapCoords};
 use geo_types::{point, Coord, Rect};
-use h3o::geom::{ContainmentMode, PolyfillConfig, ToCells};
+use h3o::geom::{ContainmentMode, Tiler, TilerBuilder};
 use h3o::{LatLng, Resolution};
 use ndarray::{s, ArrayView2, Axis};
 
@@ -289,7 +289,9 @@ where
                     &inverse_transform,
                     self.axis_order,
                     self.nodata_value,
-                    h3_resolution,
+                    TilerBuilder::new(h3_resolution)
+                        .containment_mode(ContainmentMode::ContainsCentroid)
+                        .build(),
                     compact,
                 )
             })
@@ -317,7 +319,7 @@ fn convert_array_window<'a, T>(
     inverse_transform: &AffineTransform<f64>,
     axis_order: AxisOrder,
     nodata_value: &Option<T>,
-    h3_resolution: Resolution,
+    tiler: Tiler,
     compact: bool,
 ) -> Result<HashMap<&'a T, CellCoverage>, Error>
 where
@@ -326,6 +328,8 @@ where
     let mut chunk_h3_map = HashMap::<&T, CellCoverage>::default();
 
     for splitted_window_box in split_rect_at_antimeridian(window_box) {
+        let mut tiler = tiler.clone();
+
         // h3 is only defined within -180 ... 180, so all boxes after the antimeridian split should be
         // in this range.
         debug_assert!(
@@ -335,10 +339,8 @@ where
             splitted_window_box.rect.max().x >= -180.0 && splitted_window_box.rect.max().x <= 180.0
         );
 
-        let window_box = h3o::geom::Rect::from_degrees(splitted_window_box.rect)?;
-        for cell in window_box.to_cells(
-            PolyfillConfig::new(h3_resolution).containment_mode(ContainmentMode::ContainsCentroid),
-        ) {
+        tiler.add(splitted_window_box.rect.into())?;
+        for cell in tiler.into_coverage() {
             // find the array element for the coordinate of the h3 index
             let cell_centroid: Coord = LatLng::from(cell).into();
             let arr_coord = {
@@ -451,6 +453,7 @@ mod tests {
             .nearest_h3_resolution(ResolutionSearchMode::SmallerThanPixel)
             .unwrap();
         let cell_map = converter.to_h3(h3_resolution, false).unwrap();
+        assert_eq!(cell_map.len(), 2);
         assert!(cell_map.contains_key(&OrderedFloat(f32::NAN)));
         assert!(cell_map.contains_key(&OrderedFloat(1.0_f32)));
     }

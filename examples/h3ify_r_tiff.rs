@@ -2,7 +2,7 @@ use gdal::{
     vector::{Defn, Feature, FieldDefn, OGRFieldType, ToGdal},
     Dataset, DriverManager,
 };
-use h3o::geom::ToGeo;
+use geo_types::{LineString, Polygon};
 use rasterh3::transform::from_gdal;
 use rasterh3::ResolutionSearchMode::SmallerThanPixel;
 use rasterh3::{AxisOrder, H3Converter};
@@ -49,7 +49,7 @@ fn main() {
     results.iter().for_each(|(_value, cellset)| {
         for cell in cellset.compacted_iter() {
             let mut ft = Feature::new(&defn).unwrap();
-            let poly = cell.to_geom(true).unwrap();
+            let poly = Polygon::new(LineString::from(cell.boundary()), vec![]);
             ft.set_geometry(poly.to_gdal().unwrap()).unwrap();
             ft.set_field_string("h3index", &cell.to_string()).unwrap();
             ft.set_field_integer("h3res", cell.resolution() as i32)

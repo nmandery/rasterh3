@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+* Upgrade h3o from 0.6 to 0.7
+
 ## v0.9.0 (2024-10-22)
 
 * Bump ndarray to 0.16
@@ -20,7 +22,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 * Fix converting datasets spanning the antimeridian by splitting and normalizing tiles before generating cells from
   them.
-  r Upgrade h3o from 0.5 to 0.6
+* Upgrade h3o from 0.5 to 0.6
 * Upgrade geo from 0.26 to 0.27
 
 ## v0.6.0 (2024-01-20)

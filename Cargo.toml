@@ -15,9 +15,9 @@ rayon = ["dep:rayon", "ndarray/rayon"]
 
 [dependencies]
 ahash = "0.8"
-geo = "0.28"
+geo = "0.29"
 geo-types = "^0.7"
-h3o = { version = "0.6", features = ["geo"] }
+h3o = { version = "0.7", features = ["geo"] }
 ndarray = { version = "^0.16", features = [] }
 rayon = { version = "^1", optional = true }
 thiserror = "1.0"
