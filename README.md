@@ -4,9 +4,11 @@
 
 Convert raster data to H3 cells.
 
-Port of [h3ron-ndarray](https://github.com/nmandery/h3ron/tree/main/h3ron-ndarray) from using the h3ron (binding to the official C implementation) to the rust port [h3o](https://github.com/HydroniumLabs/h3o). 
+Port of [h3ron-ndarray](https://github.com/nmandery/h3ron/tree/main/h3ron-ndarray) from using the h3ron (binding to the
+official C implementation) to the rust port [h3o](https://github.com/HydroniumLabs/h3o).
 Optional rayon-support using the `rayon` feature.
 
+Also available as a python extension: [h3ronpy](https://github.com/nmandery/h3ronpy)
 
 [Changelog](CHANGES.md)
 
