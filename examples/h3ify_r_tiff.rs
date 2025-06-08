@@ -45,14 +45,17 @@ fn main() {
     h3res_field_defn.add_to_layer(&out_lyr).unwrap();
 
     let defn = Defn::from_layer(&out_lyr);
+    let fidx_h3index = defn.field_index("h3index").unwrap();
+    let fidx_h3res = defn.field_index("h3res").unwrap();
 
     results.iter().for_each(|(_value, cellset)| {
         for cell in cellset.compacted_iter() {
             let mut ft = Feature::new(&defn).unwrap();
             let poly = Polygon::new(LineString::from(cell.boundary()), vec![]);
             ft.set_geometry(poly.to_gdal().unwrap()).unwrap();
-            ft.set_field_string("h3index", &cell.to_string()).unwrap();
-            ft.set_field_integer("h3res", cell.resolution() as i32)
+            ft.set_field_string(fidx_h3index, &cell.to_string())
+                .unwrap();
+            ft.set_field_integer(fidx_h3res, cell.resolution() as i32)
                 .unwrap();
             ft.create(&out_lyr).unwrap();
         }
