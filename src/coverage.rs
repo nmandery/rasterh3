@@ -71,9 +71,8 @@ impl CellCoverage {
                 let mut compacted_in = std::mem::take(&mut self.cells_by_resolution[r_idx]);
                 compacted_in.sort();
                 compacted_in.dedup();
-                for cell in CellIndex::compact(compacted_in.into_iter())? {
-                    self.insert(cell);
-                }
+                CellIndex::compact(&mut compacted_in)?;
+                compacted_in.into_iter().for_each(|cell| self.insert(cell));
                 res = h3_res.pred();
             }
 

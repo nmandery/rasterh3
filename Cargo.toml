@@ -15,9 +15,9 @@ rayon = ["dep:rayon", "ndarray/rayon"]
 
 [dependencies]
 ahash = "0.8"
-geo = "0.29"
+geo = "0.30"
 geo-types = "^0.7"
-h3o = { version = "0.7", features = ["geo"] }
+h3o = { version = "0.8", features = ["geo"] }
 ndarray = { version = "^0.16", features = [] }
 rayon = { version = "^1", optional = true }
 thiserror = "2.0"
@@ -25,13 +25,13 @@ tracing = "0.1"
 
 [dev-dependencies]
 approx = "^0.5"
-criterion = { version = "^0.5", features = ["html_reports"] }
+criterion = { version = "^0.6", features = ["html_reports"] }
 env_logger = "^0.11"
 # With this PR: https://github.com/georust/gdal/pull/569
-gdal = { git = "https://github.com/georust/gdal", rev = "952a91118b377a77b75acf37dd8bdd2254ea03a2", features = [
+gdal = { version = "0.18", features = [
     "array",
 ] }
-ordered-float = "4"
+ordered-float = "5"
 
 [[bench]]
 name = "convert_dataset_r"
