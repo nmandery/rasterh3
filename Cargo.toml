@@ -15,20 +15,20 @@ rayon = ["dep:rayon", "ndarray/rayon"]
 
 [dependencies]
 ahash = "0.8"
-geo = "0.31"
+geo = "0.32"
 geo-types = "^0.7"
 h3o = { version = "0.9", features = ["geo"] }
-ndarray = { version = "^0.16", features = [] }
+ndarray = { version = "^0.17", features = [] }
 rayon = { version = "^1", optional = true }
 thiserror = "2.0"
 tracing = "0.1"
 
 [dev-dependencies]
 approx = "^0.5"
-criterion = { version = "^0.7", features = ["html_reports"] }
+criterion = { version = "^0.8", features = ["html_reports"] }
 env_logger = "^0.11"
 # With this PR: https://github.com/georust/gdal/pull/569
-gdal = { version = "0.18", features = [
+gdal = { version = "0.19", features = [
     "array",
 ] }
 ordered-float = "5"
