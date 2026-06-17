@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## v0.11.0 (2026-06-17)
+
 * Upgrade h3o from 0.7 to 0.10
 * Bump ndarray to 0.17
 
