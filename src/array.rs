@@ -3,10 +3,10 @@ use std::hash::Hash;
 
 use ahash::HashMap;
 use geo::{AffineOps, AffineTransform, MapCoords};
-use geo_types::{point, Coord, Rect};
+use geo_types::{Coord, Rect, point};
 use h3o::geom::{ContainmentMode, Tiler, TilerBuilder};
 use h3o::{LatLng, Resolution};
-use ndarray::{s, ArrayView2, Axis};
+use ndarray::{ArrayView2, Axis, s};
 
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
@@ -15,7 +15,7 @@ use tracing::debug;
 
 use crate::resolution::ResolutionSearchMode;
 use crate::util::split_rect_at_antimeridian;
-use crate::{error::Error, AxisOrder, CellCoverage};
+use crate::{AxisOrder, CellCoverage, error::Error};
 
 #[cfg(feature = "rayon")]
 pub trait ArrayValue: Sized + PartialEq + Eq + Hash + Sync {}
@@ -360,10 +360,10 @@ where
                 }
             };
             if let Some(value) = arr.get(arr_coord) {
-                if let Some(nodata) = nodata_value {
-                    if nodata == value {
-                        continue;
-                    }
+                if let Some(nodata) = nodata_value
+                    && nodata == value
+                {
+                    continue;
                 }
                 chunk_h3_map
                     .entry(value)

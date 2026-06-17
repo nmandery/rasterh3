@@ -167,11 +167,11 @@ impl CellCoverage {
                         let mut is_contained = false;
                         let mut r = Some(cell.resolution());
                         while let Some(resolution) = r {
-                            if let Some(cell) = cell.parent(resolution) {
-                                if seen.contains(&cell) {
-                                    is_contained = true;
-                                    break;
-                                }
+                            if let Some(cell) = cell.parent(resolution)
+                                && seen.contains(&cell)
+                            {
+                                is_contained = true;
+                                break;
                             }
                             r = resolution.pred();
                         }
