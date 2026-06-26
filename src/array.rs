@@ -215,9 +215,9 @@ where
         // just create tiles covering the complete array
         let x_size = self.arr.shape()[self.axis_order.x_axis()];
         let y_size = self.arr.shape()[self.axis_order.y_axis()];
-        (0..((x_size as f64 / rect_size as f64).ceil() as usize))
+        (0..x_size.div_ceil(rect_size))
             .flat_map(move |r_x| {
-                (0..((y_size as f64 / rect_size as f64).ceil() as usize)).map(move |r_y| {
+                (0..y_size.div_ceil(rect_size)).map(move |r_y| {
                     Rect::new(
                         Coord {
                             x: (r_x * rect_size),
@@ -344,19 +344,20 @@ where
             // find the array element for the coordinate of the h3 index
             let cell_centroid: Coord = LatLng::from(cell).into();
             let arr_coord = {
-                // apply to x offset caused by the antimeridian split and transform to array coordinates
+                // apply the x offset caused by the antimeridian split and transform
+                // to array coordinates
                 let transformed = point! {x: cell_centroid.x + splitted_window_box.difference_due_to_antimeridian_split, y:cell_centroid.y}
                     .affine_transform(inverse_transform);
-
+                let (px, py) = (transformed.x().floor(), transformed.y().floor());
+                // `f64 as usize` saturates negatives to 0, which would silently
+                // assign boundary cells to the first pixel. Skip cells mapping
+                // outside the raster instead. (`arr.get` handles the upper bound.)
+                if px < 0.0 || py < 0.0 {
+                    continue;
+                }
                 match axis_order {
-                    AxisOrder::XY => [
-                        transformed.x().floor() as usize,
-                        transformed.y().floor() as usize,
-                    ],
-                    AxisOrder::YX => [
-                        transformed.y().floor() as usize,
-                        transformed.x().floor() as usize,
-                    ],
+                    AxisOrder::XY => [px as usize, py as usize],
+                    AxisOrder::YX => [py as usize, px as usize],
                 }
             };
             if let Some(value) = arr.get(arr_coord) {
@@ -373,8 +374,25 @@ where
         }
     }
 
-    // do an early compacting to free a bit of memory
-    finalize_chunk_map(&mut chunk_h3_map, compact)?;
+    // Do an early dedup/compact to free a bit of memory. When not compacting,
+    // skip the relatively expensive parent-removal here and defer it to the
+    // single final merge pass in `to_h3` to avoid repeating it for every chunk.
+    {
+        #[cfg(feature = "rayon")]
+        let iter = chunk_h3_map.par_iter_mut();
+
+        #[cfg(not(feature = "rayon"))]
+        let mut iter = chunk_h3_map.iter_mut();
+
+        iter.try_for_each(|(_, cellset)| {
+            if compact {
+                cellset.compact()
+            } else {
+                cellset.dedup(true, false);
+                Ok(())
+            }
+        })?;
+    }
 
     Ok(chunk_h3_map)
 }
@@ -445,7 +463,7 @@ mod tests {
             [OrderedFloat(f32::NAN), OrderedFloat(1.0_f32)],
             [OrderedFloat(f32::NAN), OrderedFloat(1.0_f32)],
         ];
-        let transform = crate::transform::from_gdal(&[11.0, 1.0, 0.0, 10.0, 1.2, 0.2]);
+        let transform = crate::transform::from_gdal(&[11.0, 1.0, 0.0, 10.0, 0.0, -1.0]);
 
         let view = arr.view();
         let converter = H3Converter::new(&view, &None, &transform, AxisOrder::XY);
@@ -456,5 +474,42 @@ mod tests {
         assert_eq!(cell_map.len(), 2);
         assert!(cell_map.contains_key(&OrderedFloat(f32::NAN)));
         assert!(cell_map.contains_key(&OrderedFloat(1.0_f32)));
+    }
+
+    #[test]
+    fn antimeridian_wrapped_cells_keep_correct_value() {
+        // Raster spanning the antimeridian. Pixels east of +180 wrap to negative
+        // longitudes; their cells must be assigned the value of the pixel they
+        // actually cover, instead of collapsing onto column 0 (value 1) as the
+        // inverted antimeridian-shift sign did before.
+        let (width, height) = (30usize, 10usize);
+        let mut arr = ndarray::Array2::<u16>::zeros((height, width));
+        for c in 0..width {
+            for r in 0..height {
+                // value encodes the column (+1 so 0 stays the nodata value)
+                arr[(r, c)] = c as u16 + 1;
+            }
+        }
+        // origin lon 179.5, lat 5; pixel 0.1 deg -> spans lon 179.5..182.5
+        // (crosses +180). GDAL ordering: [origin_x, px_w, rot, origin_y, rot, px_h]
+        let transform = crate::transform::from_gdal(&[179.5, 0.1, 0.0, 5.0, 0.0, -0.1]);
+        let view = arr.view();
+        let conv = H3Converter::new(&view, &Some(0_u16), &transform, AxisOrder::YX);
+        let map = conv.to_h3(h3o::Resolution::Six, false).unwrap();
+
+        assert!(
+            !map.is_empty(),
+            "no cells produced for antimeridian-spanning raster"
+        );
+
+        // Columns 6..30 map to longitudes >= 180.1, i.e. fully east of the
+        // antimeridian. With the antimeridian fix their cells must carry the
+        // matching (high) values rather than collapsing onto column 0 (value 1).
+        let max_value = map.keys().map(|v| **v).max().unwrap_or(0);
+        assert!(
+            max_value > 15,
+            "wrapped cells east of +180 were not assigned their correct values; \
+             max value seen = {max_value}"
+        );
     }
 }

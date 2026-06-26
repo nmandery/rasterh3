@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use gdal::Dataset;
 use geo::AffineTransform;
 use h3o::Resolution;
@@ -22,7 +22,7 @@ fn convert_r_dataset<'a>(
     transform: &'a AffineTransform<f64>,
     h3_resolution: Resolution,
 ) {
-    let conv = H3Converter::new(view, &Some(0_u8), transform, AxisOrder::XY);
+    let conv = H3Converter::new(view, &Some(0_u8), transform, AxisOrder::YX);
     let _ = conv.to_h3(h3_resolution, true).unwrap();
 }
 
@@ -34,7 +34,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     //group.measurement_time(Duration::new(60 * 5, 0));
     let h3_res = Resolution::Eleven;
     group.bench_function(format!("convert_r_dataset_h3_res_{h3_res}"), |b| {
-        b.iter(|| convert_r_dataset(&band_view, &transform, black_box(h3_res)))
+        b.iter(|| convert_r_dataset(&band_view, &transform, std::hint::black_box(h3_res)))
     });
     group.finish();
 }

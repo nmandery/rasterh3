@@ -7,6 +7,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+* Fix incorrect value-to-cell mapping for rasters crossing the antimeridian: the longitude shift applied when mapping cell centroids back to raster pixels had its sign inverted, and tiles lying fully outside `[-180, 180]` were not normalized (caused a debug-only panic and silently wrong cells).
+* Fix `ResolutionSearchMode::MinDiff` and `SmallerThanPixel` returning resolution 0 for rasters finer than the smallest H3 cell, or when no H3 cell is smaller than a pixel.
+* Fix underestimated per-pixel area in `nearest_h3_resolution` for small arrays (the bounding box spanned `shape - 1` pixels but was divided by `shape * shape`); 1x1 arrays no longer estimate a zero pixel area.
+* Skip cells whose centroid maps to a negative raster coordinate instead of silently clamping them to the first pixel via `f64 as usize` saturation.
+* Defer the parent-removal pass of `CellCoverage::dedup` to the single final merge step in `to_h3` instead of running it once per tile.
+* Return `impl Iterator` from the `CellCoverage` iterators instead of `Box<dyn Iterator>`, removing a per-call allocation.
+* Derive `Default` for `CellCoverage`.
+* Benchmark: use `std::hint::black_box` (the `criterion::black_box` alias is deprecated) and convert `r.tiff` with `AxisOrder::YX` as GDAL expects.
+
 ## v0.11.0 (2026-06-17)
 
 * Upgrade h3o from 0.7 to 0.10

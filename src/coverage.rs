@@ -13,6 +13,7 @@ use crate::Error;
 ///
 /// This struct internally uses mostly `sort` instead of `sort_unstable` as the Vec to be sorted are
 /// often at least partially sorted.
+#[derive(Default)]
 pub struct CellCoverage {
     pub(crate) modified_resolutions: [bool; 16],
 
@@ -87,39 +88,35 @@ impl CellCoverage {
         Ok(())
     }
 
-    pub fn compacted_iter(&self) -> Box<dyn Iterator<Item = CellIndex> + '_> {
-        Box::new(
-            self.cells_by_resolution
-                .iter()
-                .flat_map(|v| v.iter())
-                .copied(),
-        )
+    pub fn compacted_iter(&self) -> impl Iterator<Item = CellIndex> + '_ {
+        self.cells_by_resolution
+            .iter()
+            .flat_map(|v| v.iter())
+            .copied()
     }
 
-    pub fn into_compacted_iter(self) -> Box<dyn Iterator<Item = CellIndex>> {
-        Box::new(
-            self.cells_by_resolution
-                .into_iter()
-                .flat_map(|v| v.into_iter()),
-        )
+    pub fn into_compacted_iter(self) -> impl Iterator<Item = CellIndex> {
+        self.cells_by_resolution
+            .into_iter()
+            .flat_map(|v| v.into_iter())
     }
 
-    pub fn uncompacted_iter(&self, r: Resolution) -> Box<dyn Iterator<Item = CellIndex> + '_> {
+    pub fn uncompacted_iter(&self, r: Resolution) -> impl Iterator<Item = CellIndex> + '_ {
         let r_idx: usize = r.into();
-        Box::new((0..=r_idx).flat_map(move |r_idx| {
+        (0..=r_idx).flat_map(move |r_idx| {
             self.cells_by_resolution[r_idx]
                 .iter()
                 .flat_map(move |cell| cell.children(r))
-        }))
+        })
     }
 
-    pub fn into_uncompacted_iter(mut self, r: Resolution) -> Box<dyn Iterator<Item = CellIndex>> {
+    pub fn into_uncompacted_iter(mut self, r: Resolution) -> impl Iterator<Item = CellIndex> {
         let r_idx: usize = r.into();
-        Box::new((0..=r_idx).flat_map(move |r_idx| {
+        (0..=r_idx).flat_map(move |r_idx| {
             std::mem::take::<Vec<CellIndex>>(&mut self.cells_by_resolution[r_idx])
                 .into_iter()
                 .flat_map(move |cell| cell.children(r))
-        }))
+        })
     }
 
     pub fn len(&self) -> usize {
@@ -190,15 +187,5 @@ impl CellCoverage {
             self.dedup(true, true);
         }
         Ok(())
-    }
-}
-
-#[allow(clippy::derivable_impls)]
-impl Default for CellCoverage {
-    fn default() -> Self {
-        Self {
-            modified_resolutions: [false; 16],
-            cells_by_resolution: Default::default(),
-        }
     }
 }

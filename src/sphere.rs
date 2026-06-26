@@ -9,6 +9,9 @@ const EARTH_RADIUS_EQUATOR: f64 = 6_378_137_f64;
 ///
 /// Published in Chamberlain, R. and W. Duquette. “Some algorithms for polygons on a sphere.” (2007).
 /// The full paper is available [here](https://www.semanticscholar.org/paper/Some-algorithms-for-polygons-on-a-sphere.-Chamberlain-Duquette/79668c0fe32788176758a2285dd674fa8e7b8fa8).
+///
+/// For [`LineString`] the ring is expected to be closed; an open ring yields an
+/// area of `0.0`.
 pub trait AreaOnSphere {
     fn area_on_sphere_m2(&self) -> f64;
 }
